@@ -1,6 +1,7 @@
 package com.example.currency_rate_provider.controller;
 
 import com.example.currency_rate_provider.model.RateResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -10,11 +11,8 @@ import java.util.Random;
 /**
  * REST-контроллер, который обрабатывает HTTP-запросы на /api/rates/usdrub.
  *
- * Аналог в Python (Flask):
- *   @app.route('/api/rates/usdrub')
- *   def get_usdrub():
- *       rate = 80.0 + random.uniform(-2, 2)
- *       return {"currency": "USDRUB", "rate": rate}
+ * Конфигурация курса (BASE_RATE, VARIATION) вынесена в application.properties
+ * в соответствии с 12-factor app (фактор III — конфигурация в среде выполнения).
  *
  * @RestController — говорит Spring, что этот класс обрабатывает HTTP-запросы
  *                  и автоматически сериализует ответы в JSON
@@ -25,9 +23,13 @@ import java.util.Random;
 @RequestMapping("/api/rates")
 public class RateController {
 
-    private static final double BASE_RATE = 80.0;   // Базовый курс USDRUB
-    private static final double VARIATION = 2.0;    // Разброс ±2 рубля
-    private final Random random = new Random();     // Генератор случайных чисел
+    private final Random random = new Random();
+
+    @Value("${rate.base}")
+    private double baseRate;
+
+    @Value("${rate.variation}")
+    private double variation;
 
     /**
      * Обрабатывает GET /api/rates/usdrub.
@@ -35,8 +37,8 @@ public class RateController {
      */
     @GetMapping("/usdrub")
     public RateResponse getUsdRub() {
-        // Генерируем случайное число от -VARIATION до +VARIATION и прибавляем к базовому курсу
-        double rate = BASE_RATE + (random.nextDouble() * 2 * VARIATION - VARIATION);
+        // Генерируем случайное число от -variation до +variation и прибавляем к базовому курсу
+        double rate = baseRate + (random.nextDouble() * 2 * variation - variation);
         // Округляем до 2 знаков после запятой (как реальные курсы валют)
         rate = Math.round(rate * 100.0) / 100.0;
 

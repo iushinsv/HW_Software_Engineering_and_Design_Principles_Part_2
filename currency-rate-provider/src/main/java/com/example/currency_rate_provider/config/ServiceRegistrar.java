@@ -15,10 +15,12 @@ public class ServiceRegistrar {
 
     private final ServiceDiscovery<Void> serviceDiscovery;
 
-    public ServiceRegistrar(CuratorFramework client, @Value("${server.port}") int port) throws Exception {
+    public ServiceRegistrar(CuratorFramework client,
+                            @Value("${server.port}") int port,
+                            @Value("${service.address:localhost}") String address) throws Exception {
         ServiceInstance<Void> instance = ServiceInstance.<Void>builder()
                 .name("currency-rate-provider")
-                .address("localhost")
+                .address(address)
                 .port(port)
                 .uriSpec(new UriSpec("{scheme}://{address}:{port}"))
                 .build();

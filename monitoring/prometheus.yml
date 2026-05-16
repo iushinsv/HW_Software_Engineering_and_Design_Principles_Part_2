@@ -6,11 +6,11 @@ global:
 
 scrape_configs:
   # Job для currency-rate-provider (сервер, Service 1)
-  # Java-сервисы запущены на хосте, поэтому используем IP Docker gateway
+  # Все сервисы запущены в Docker — используем имена контейнеров
   - job_name: "currency-rate-provider"
     metrics_path: "/actuator/prometheus"
     static_configs:
-      - targets: ["10.0.0.1:8080"]
+      - targets: ["currency-rate-provider:8080"]
         labels:
           application: "currency-rate-provider"
           service: "service1"
@@ -19,7 +19,7 @@ scrape_configs:
   - job_name: "rate-printer"
     metrics_path: "/actuator/prometheus"
     static_configs:
-      - targets: ["10.0.0.1:8081"]
+      - targets: ["rate-printer:8081"]
         labels:
           application: "rate-printer"
           service: "client"

@@ -3,16 +3,20 @@ package com.example.rate_printer.config;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class CuratorConfig {
 
+    @Value("${zookeeper.connect-string:localhost:2181}")
+    private String zookeeperConnectString;
+
     @Bean
     public CuratorFramework curatorFramework() {
         CuratorFramework client = CuratorFrameworkFactory.newClient(
-                "localhost:2181",
+                zookeeperConnectString,
                 new ExponentialBackoffRetry(1000, 3)
         );
         client.start();
