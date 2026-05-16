@@ -1,56 +1,67 @@
 package com.example.rate_printer.service;
 
 import jakarta.annotation.PostConstruct;
+import org.apache.curator.x.discovery.ServiceDiscovery;
+import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
+import org.apache.curator.x.discovery.ServiceInstance;
+import org.apache.curator.framework.CuratorFramework;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Map;
+import java.util.*;
 
-/**
- * Сервис, который каждые 5 секунд запрашивает курс USDRUB
- * у первого сервиса (currency-rate-provider) и выводит в консоль.
- *
- * @PostConstruct — метод запускается сразу после старта Spring-приложения
- * RestTemplate — делает HTTP GET запрос и парсит JSON в Map
- */
 @Service
 public class RatePrinterService {
 
     private static final Logger log = LoggerFactory.getLogger(RatePrinterService.class);
-    private static final String RATE_URL = "http://localhost:8080/api/rates/usdrub";
 
     private final RestTemplate restTemplate;
+    private final ServiceDiscovery<Void> serviceDiscovery;
+    private final Random random = new Random();
 
-    // Spring сам подставит RestTemplate (внедрение зависимости через конструктор)
-    public RatePrinterService(RestTemplate restTemplate) {
+    public RatePrinterService(RestTemplate restTemplate, CuratorFramework client) {
         this.restTemplate = restTemplate;
+        this.serviceDiscovery = ServiceDiscoveryBuilder.builder(Void.class)
+                .client(client)
+                .basePath("/services")
+                .build();
     }
 
     @PostConstruct
     public void startPrinting() {
-        // Запускаем в отдельном потоке, чтобы не блокировать старт Spring
         new Thread(() -> {
-            while (true) {
-                try {
-                    // Делаем HTTP GET запрос к Сервису 1
-                    // Ответ приходит как Map с ключами "currency" и "rate"
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> response = restTemplate.getForObject(RATE_URL, Map.class);
+            try {
+                serviceDiscovery.start();
+                log.info("Connected to ZooKeeper, starting rate polling...");
+                
+                while (true) {
+                    try {
+                        Collection<ServiceInstance<Void>> instances =
+                                serviceDiscovery.queryForInstances("currency-rate-provider");
 
-                    log.info("USDRUB: {}", response.get("rate"));
-                } catch (Exception e) {
-                    log.error("Ошибка при запросе курса: {}", e.getMessage());
-                }
+                        if (instances.isEmpty()) {
+                            log.warn("No instances of currency-rate-provider found in ZooKeeper");
+                        } else {
+                            List<ServiceInstance<Void>> instanceList = new ArrayList<>(instances);
+                            ServiceInstance<Void> selected = instanceList.get(random.nextInt(instanceList.size()));
 
-                // Ждём 5 секунд
-                try {
-                    Thread.sleep(5000);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+                            String url = "http://" + selected.getAddress() + ":" + selected.getPort() + "/api/rates/usdrub";
+                            Map<String, Object> response = restTemplate.getForObject(url, Map.class);
+
+                            log.info("USDRUB: {} (from {}:{})",
+                                    response.get("rate"), selected.getAddress(), selected.getPort());
+                        }
+
+                        Thread.sleep(5000);
+                    } catch (Exception e) {
+                        log.error("Error during rate polling: {}", e.getMessage());
+                        Thread.sleep(5000);
+                    }
                 }
+            } catch (Exception e) {
+                log.error("Failed to start service discovery: {}", e.getMessage());
             }
         }).start();
     }
