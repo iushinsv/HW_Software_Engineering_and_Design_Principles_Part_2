@@ -6,6 +6,9 @@ services:
     restart: always
     ports:
       - "2181:2181"
+      - "7000:7000"   # Встроенный Prometheus-эндпоинт ZooKeeper
+    environment:
+      ZOO_CFG_EXTRA: "metricsProvider.className=org.apache.zookeeper.metrics.prometheus.PrometheusMetricsProvider metricsProvider.httpPort=7000"
 
   postgres:
     image: postgres:16
@@ -27,3 +30,35 @@ services:
       PACT_BROKER_DATABASE_ADAPTER: postgres
     depends_on:
       - postgres
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    depends_on:
+      - zookeeper
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana-provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana-provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana-provisioning/dashboards/jvm-micrometer_4701.json:/var/lib/grafana/dashboards/jvm-micrometer_4701.json
+    depends_on:
+      - prometheus
+
+volumes:
+  grafana-data:

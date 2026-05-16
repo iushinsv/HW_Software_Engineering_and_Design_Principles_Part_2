@@ -1,0 +1,15 @@
+# Grafana provisioning: автоматическая загрузка дашбордов
+# Dashboard ID 4701 — JVM (Micrometer) — стандартный дашборд для Java-приложений
+# https://grafana.com/grafana/dashboards/4701-jvm-micrometer/
+apiVersion: 1
+
+providers:
+  - name: "default"
+    orgId: 1
+    folder: ""
+    type: file
+    disableDeletion: false
+    editable: true
+    updateIntervalSeconds: 10
+    options:
+      path: /etc/grafana/provisioning/dashboards

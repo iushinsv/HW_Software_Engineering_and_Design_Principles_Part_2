@@ -1,0 +1,60 @@
+{
+  "title": "Business Metrics (HW4)",
+  "uid": "hw4-business-metrics",
+  "version": 1,
+  "panels": [
+    {
+      "title": "RPS by Client (http.server.requests.by.client)",
+      "type": "graph",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_by_client_total[1m])",
+          "legendFormat": "{{client}} - {{method}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "description": "Количество запросов в секунду с разбивкой по клиентам (заголовок X-Service-Name)"
+    },
+    {
+      "title": "HTTP 500 Errors Rate",
+      "type": "graph",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "expr": "rate(http_server_requests_seconds_count{status=\"500\"}[1m])",
+          "legendFormat": "{{application}} - {{method}} {{uri}}",
+          "refId": "A"
+        }
+      ],
+      "description": "Количество 500-х ошибок в секунду (из стандартной метрики http.server.requests)"
+    },
+    {
+      "title": "P95 Latency (http.server.requests)",
+      "type": "graph",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket[1m]))",
+          "legendFormat": "P95 - {{application}}",
+          "refId": "A"
+        }
+      ],
+      "description": "95-й персентиль времени обработки запроса"
+    },
+    {
+      "title": "P99 Latency (http.server.requests)",
+      "type": "graph",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, rate(http_server_requests_seconds_bucket[1m]))",
+          "legendFormat": "P99 - {{application}}",
+          "refId": "A"
+        }
+      ],
+      "description": "99-й персентиль времени обработки запроса"
+    }
+  ],
+  "schemaVersion": 27
+}

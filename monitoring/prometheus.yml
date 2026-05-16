@@ -1,0 +1,35 @@
+# Конфигурация Prometheus для сбора метрик с Java-сервисов и ZooKeeper
+# Prometheus будет "scrape" (забирать) метрики по расписанию
+global:
+  scrape_interval: 15s      # Как часто собирать метрики (по умолчанию)
+  evaluation_interval: 15s  # Как часто оценивать правила/алерты
+
+scrape_configs:
+  # Job для currency-rate-provider (сервер, Service 1)
+  # Java-сервисы запущены на хосте, поэтому используем IP Docker gateway
+  - job_name: "currency-rate-provider"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["10.0.0.1:8080"]
+        labels:
+          application: "currency-rate-provider"
+          service: "service1"
+
+  # Job для rate-printer (клиент)
+  - job_name: "rate-printer"
+    metrics_path: "/actuator/prometheus"
+    static_configs:
+      - targets: ["10.0.0.1:8081"]
+        labels:
+          application: "rate-printer"
+          service: "client"
+
+  # Job для ZooKeeper (встроенный Prometheus-эндпоинт)
+  # ZooKeeper запущен в Docker-контейнере — доступен по имени сервиса
+  - job_name: "zookeeper"
+    metrics_path: "/metrics"
+    static_configs:
+      - targets: ["zookeeper:7000"]
+        labels:
+          application: "zookeeper"
+          service: "zookeeper"

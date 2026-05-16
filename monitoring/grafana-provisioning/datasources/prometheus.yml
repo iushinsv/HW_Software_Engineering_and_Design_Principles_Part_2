@@ -1,0 +1,11 @@
+# Grafana provisioning: автоматическое подключение Prometheus как datasource
+# Без этого пришлось бы добавлять datasource вручную через UI
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true

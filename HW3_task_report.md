@@ -42,8 +42,60 @@
 | `currency-rate-provider/pom.xml` | Зависимость provider |
 | `rate-printer/src/test/resources/pact.publish.properties` | URL Pact Broker |
 
-### 6. Скриншоты (опционально)
-(Можно приложить скриншот успешного билда)
+---
+## Сборка и запуск
+
+### Требования
+- Java 17+
+- Maven (или Maven Wrapper)
+- Docker (для ZooKeeper, Postgres и Pact Broker)
+
+### Запуск инфраструктуры
+```bash
+cd HW_Software_Engineering_and_Design_Principles_Part_2
+docker compose up -d
+```
+
+Будут запущены 3 сервиса:
+- **ZooKeeper** (порт 2181) — реестр сервисов (HW2)
+- **Postgres** (порт 5432) — БД для Pact Broker
+- **Pact Broker** (порт 9292) — хранилище контрактов
+
+### Сборка сервисов
+```bash
+cd currency-rate-provider && ./mvnw clean package -DskipTests
+cd rate-printer && ./mvnw clean package -DskipTests
+```
+
+### Consumer test + публикация контракта
+```bash
+cd rate-printer
+./mvnw clean test pact:publish
+```
+
+Тест генерирует контракт и публикует его в Pact Broker (`http://localhost:9292`).
+
+### Provider verification (верификация контракта)
+```bash
+cd currency-rate-provider
+./mvnw clean test -Dpact.verifier.publishResults=true
+```
+
+Провайдер загружает контракты из Broker, запускает реальное приложение и проверяет, что его API соответствует ожиданиям consumer. Результат верификации публикуется обратно в Broker.
+
+### Полный end-to-end сценарий
+```bash
+# 1. Поднять инфраструктуру
+docker compose up -d
+
+# 2. Consumer: тест + публикация
+cd rate-printer && ./mvnw clean test pact:publish
+
+# 3. Provider: верификация
+cd ../currency-rate-provider && ./mvnw clean test -Dpact.verifier.publishResults=true
+```
+
+---
 
 ## Вывод
 Consumer-Driven Contract Testing с Pact реализован: consumer описывает ожидания, provider их верифицирует. Контракты хранятся в Pact Broker, что позволяет отслеживать изменения и не допускать несовместимости между сервисами.
