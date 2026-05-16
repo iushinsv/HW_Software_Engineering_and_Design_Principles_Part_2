@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  zookeeper:
+    image: zookeeper:3.8
+    restart: always
+    ports:
+      - "2181:2181"
+
+  postgres:
+    image: postgres:16
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: pact
+      POSTGRES_PASSWORD: pact
+      POSTGRES_DB: pact
+
+  pact-broker:
+    image: pactfoundation/pact-broker:latest
+    restart: always
+    ports:
+      - "9292:9292"
+    environment:
+      PACT_BROKER_DATABASE_URL: "postgres://pact:pact@postgres:5432/pact"
+      PACT_BROKER_DATABASE_ADAPTER: postgres
+    depends_on:
+      - postgres
